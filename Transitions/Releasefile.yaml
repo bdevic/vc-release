@@ -1,6 +1,6 @@
 # Exported from:        http://Brunos-MacBook-Pro.local:5516/
 # Release version:      22.0.0-20211220-123974
-# Date created:         Tue Apr 05 17:53:55 CEST 2022
+# Date created:         Tue Apr 05 17:54:38 CEST 2022
 
 ---
 apiVersion: xl-release/v1
@@ -23,6 +23,7 @@ spec:
           conditions:
           - type: delivery.ItemsCompletionCondition
           - type: delivery.TimeCondition
+            startDateOffset: 48
   - stage: SIT
     transition:
       name: New Transition
