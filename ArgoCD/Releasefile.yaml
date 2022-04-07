@@ -1,6 +1,6 @@
 # Exported from:        http://localhost:5516/
 # Release version:      22.0.2
-# Date created:         Thu Apr 07 09:32:32 UTC 2022
+# Date created:         Thu Apr 07 09:47:37 UTC 2022
 
 ---
 apiVersion: xl-release/v1
@@ -191,7 +191,7 @@ spec:
 - template: Initial Application Setup
   scheduledStartDate: 2022-01-19T03:30:00Z
   phases:
-  - phase: New Phase
+  - phase: Setup ArgoCD
     tasks:
     - name: Add Repository
       type: argocd.addRepository
@@ -224,6 +224,7 @@ spec:
       appName: "${ARGO_APP_NAME}"
       variableMapping:
         pythonScript.syncStatus: "${ARGO_APP_SYNC_STATUS}"
+    color: '#3d6c9e'
   variables:
   - type: xlrelease.StringVariable
     key: GIT_REPO_URL
