@@ -1,6 +1,6 @@
 # Exported from:        http://localhost:5516/
 # Release version:      22.0.2
-# Date created:         Thu Apr 07 09:47:37 UTC 2022
+# Date created:         Thu Apr 07 09:54:13 UTC 2022
 
 ---
 apiVersion: xl-release/v1
@@ -26,8 +26,9 @@ spec:
   loginOrToken: !value "github_Server_GitHub_loginOrToken"
 - template: Continuous Delivery
   scheduledStartDate: 2022-01-19T03:30:00Z
+  dueDate: 2022-01-19T04:30:00Z
   phases:
-  - phase: New Phase
+  - phase: Sync change to ArgoCD
     tasks:
     - name: Create Branch
       type: github.CreateBranch
@@ -82,6 +83,7 @@ spec:
       appName: "${ARGO_APP_NAME}"
       variableMapping:
         pythonScript.syncStatus: "${ARGO_APP_SYNC_STATUS}"
+    color: '#3d6c9e'
   variables:
   - type: xlrelease.StringVariable
     key: NEW_TAG
@@ -108,6 +110,7 @@ spec:
   riskProfile: Default risk profile
 - template: Environment Promotion
   scheduledStartDate: 2022-01-19T03:30:00Z
+  dueDate: 2022-01-19T04:30:00Z
   phases:
   - phase: New Phase
     tasks:
@@ -190,6 +193,7 @@ spec:
   riskProfile: Default risk profile
 - template: Initial Application Setup
   scheduledStartDate: 2022-01-19T03:30:00Z
+  dueDate: 2022-01-19T04:30:00Z
   phases:
   - phase: Setup ArgoCD
     tasks:
@@ -246,6 +250,7 @@ spec:
 - template: Sample Release Template with Digital.ai Release and ArgoCD
   description: Major and minor release template.
   scheduledStartDate: 2022-03-29T09:00:00Z
+  dueDate: 2022-03-29T10:00:00Z
   phases:
   - phase: QA
     tasks:
