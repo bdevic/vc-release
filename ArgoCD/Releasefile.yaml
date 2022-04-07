@@ -1,0 +1,397 @@
+# Exported from:        http://localhost:5516/
+# Release version:      22.0.2
+# Date created:         Thu Apr 07 09:32:32 UTC 2022
+
+---
+apiVersion: xl-release/v1
+kind: Templates
+metadata:
+  home: Argo CD
+spec:
+- name: ArgoCD
+  type: argocd.ArgoCD
+  url: https://acf0164be013847eb8a74392711cb455-1460220843.us-east-2.elb.amazonaws.com
+  username: admin
+  password: !value "argocd_ArgoCD_ArgoCD_password"
+- name: Argotrigger
+  type: events.PostWebhookEndpoint
+  path: argotrigger
+  authentication:
+    type: events.NoAuthentication
+- name: ArgoCD
+  type: git.Repository
+  url: https://github.com/aanaberu/helloworld-cd.git
+- name: GitHub
+  type: github.Server
+  loginOrToken: !value "github_Server_GitHub_loginOrToken"
+- template: Continuous Delivery
+  scheduledStartDate: 2022-01-19T03:30:00Z
+  phases:
+  - phase: New Phase
+    tasks:
+    - name: Create Branch
+      type: github.CreateBranch
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      oldBranch: main
+      newBranch: "revision_${NEW_TAG}"
+    - name: Clone Repository
+      type: github.cloneRepository
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      repositoryUrl: "${GIT_CD_REPO_URL}"
+      localPath: "${LOCAL_GIT_CLONE_PATH}"
+      branchName: "revision_${NEW_TAG}"
+    - name: Update Manifest
+      type: kubernetes.updateManifest
+      manifestPath: "${LOCAL_GIT_CLONE_PATH}/${GIT_CD_REPO_NAME}/${MANIFEST_PATH_IN_GIT}/${MANIFEST_FILE}"
+      imageUpdates:
+        helloworld-container: "xldevdocker/helloworld:${NEW_TAG}"
+    - name: Commit Files
+      type: github.commitFiles
+      server: GitHub
+      localPath: "${LOCAL_GIT_CLONE_PATH}/${GIT_CD_REPO_NAME}"
+      files:
+      - "${MANIFEST_PATH_IN_GIT}/${MANIFEST_FILE}"
+      commitMessage: Updated image tag
+      push: true
+    - name: Create Pull Request
+      type: github.CreatePullRequest
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      ^title: "${NEW_TAG} - Updated tag"
+      base: main
+      head: "revision_${NEW_TAG}"
+      body: Updated tag
+      variableMapping:
+        pythonScript.pullRequestNumber: "${PULL_REQUEST_NO}"
+    - name: Merge Pull Request
+      type: github.MergePullRequest
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      commitMessage: Approved Automation
+      variableMapping:
+        pythonScript.pullRequestNumber: "${PULL_REQUEST_NO}"
+    - name: Sync Application
+      type: argocd.syncApplication
+      argocdServer: ArgoCD
+      appName: "${ARGO_APP_NAME}"
+    - name: Get Sync Status
+      type: argocd.getSyncStatus
+      argocdServer: ArgoCD
+      appName: "${ARGO_APP_NAME}"
+      variableMapping:
+        pythonScript.syncStatus: "${ARGO_APP_SYNC_STATUS}"
+  variables:
+  - type: xlrelease.StringVariable
+    key: NEW_TAG
+  - type: xlrelease.StringVariable
+    key: GIT_CD_REPO_URL
+  - type: xlrelease.StringVariable
+    key: GIT_CD_REPO_NAME
+  - type: xlrelease.StringVariable
+    key: LOCAL_GIT_CLONE_PATH
+  - type: xlrelease.StringVariable
+    key: MANIFEST_FILE
+  - type: xlrelease.StringVariable
+    key: MANIFEST_PATH_IN_GIT
+  - type: xlrelease.IntegerVariable
+    key: PULL_REQUEST_NO
+    requiresValue: false
+    showOnReleaseStart: false
+  - type: xlrelease.StringVariable
+    key: ARGO_APP_NAME
+  - type: xlrelease.StringVariable
+    key: ARGO_APP_SYNC_STATUS
+    requiresValue: false
+    showOnReleaseStart: false
+  riskProfile: Default risk profile
+- template: Environment Promotion
+  scheduledStartDate: 2022-01-19T03:30:00Z
+  phases:
+  - phase: New Phase
+    tasks:
+    - name: Create Branch
+      type: github.CreateBranch
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      oldBranch: main
+      newBranch: "revision_promotion_${NEW_TAG}"
+    - name: Clone Repository
+      type: github.cloneRepository
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      repositoryUrl: "${GIT_CD_REPO_URL}"
+      localPath: "${LOCAL_GIT_CLONE_PATH}"
+      branchName: "revision_promotion_${NEW_TAG}"
+    - name: Update Manifest
+      type: kubernetes.updateManifest
+      manifestPath: "${LOCAL_GIT_CLONE_PATH}/${GIT_CD_REPO_NAME}/${MANIFEST_PATH_IN_GIT}/${MANIFEST_FILE}"
+      imageUpdates:
+        helloworld-uat-container: "xldevdocker/helloworld:${NEW_TAG}"
+    - name: Commit Files
+      type: github.commitFiles
+      server: GitHub
+      localPath: "${LOCAL_GIT_CLONE_PATH}/${GIT_CD_REPO_NAME}"
+      files:
+      - "${MANIFEST_PATH_IN_GIT}/${MANIFEST_FILE}"
+      commitMessage: Updated image tag
+      push: true
+    - name: Create Pull Request
+      type: github.CreatePullRequest
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      ^title: "${NEW_TAG} - Updated tag"
+      base: main
+      head: "revision_promotion_${NEW_TAG}"
+      body: Updated tag
+      variableMapping:
+        pythonScript.pullRequestNumber: "${PULL_REQUEST_NO}"
+    - name: Merge Pull Request
+      type: github.MergePullRequest
+      server: GitHub
+      repositoryName: "${GIT_CD_REPO_NAME}"
+      commitMessage: Approved Automation
+      variableMapping:
+        pythonScript.pullRequestNumber: "${PULL_REQUEST_NO}"
+    - name: Sync Application
+      type: argocd.syncApplication
+      argocdServer: ArgoCD
+      appName: "${ARGO_APP_NAME}"
+    - name: Get Sync Status
+      type: argocd.getSyncStatus
+      argocdServer: ArgoCD
+      appName: "${ARGO_APP_NAME}"
+      variableMapping:
+        pythonScript.syncStatus: "${ARGO_APP_SYNC_STATUS}"
+  variables:
+  - type: xlrelease.StringVariable
+    key: NEW_TAG
+  - type: xlrelease.StringVariable
+    key: GIT_CD_REPO_URL
+  - type: xlrelease.StringVariable
+    key: GIT_CD_REPO_NAME
+  - type: xlrelease.StringVariable
+    key: LOCAL_GIT_CLONE_PATH
+  - type: xlrelease.StringVariable
+    key: MANIFEST_FILE
+  - type: xlrelease.StringVariable
+    key: MANIFEST_PATH_IN_GIT
+  - type: xlrelease.IntegerVariable
+    key: PULL_REQUEST_NO
+    requiresValue: false
+    showOnReleaseStart: false
+  - type: xlrelease.StringVariable
+    key: ARGO_APP_NAME
+  - type: xlrelease.StringVariable
+    key: ARGO_APP_SYNC_STATUS
+    requiresValue: false
+    showOnReleaseStart: false
+  riskProfile: Default risk profile
+- template: Initial Application Setup
+  scheduledStartDate: 2022-01-19T03:30:00Z
+  phases:
+  - phase: New Phase
+    tasks:
+    - name: Add Repository
+      type: argocd.addRepository
+      argocdServer: ArgoCD
+      url: "${GIT_REPO_URL}"
+    - name: Create Project
+      type: argocd.createProject
+      argocdServer: ArgoCD
+      projectName: "${ARGO_PROJECT_NAME}"
+      sourceRepos:
+      - "${GIT_REPO_URL}"
+      destinations:
+        ${KUBE_SERVER_URL}: "${KUBE_NAMESPACE}"
+    - name: Create Application
+      type: argocd.createApplication
+      argocdServer: ArgoCD
+      appName: "${ARGO_APP_NAME}"
+      project: "${ARGO_PROJECT_NAME}"
+      url: "${GIT_REPO_URL}"
+      path: "${MANIFEST_PATH_IN_GIT}"
+      server: "${KUBE_SERVER_URL}"
+      namespace: "${KUBE_NAMESPACE}"
+    - name: Sync Application
+      type: argocd.syncApplication
+      argocdServer: ArgoCD
+      appName: "${ARGO_APP_NAME}"
+    - name: Get Sync Status
+      type: argocd.getSyncStatus
+      argocdServer: ArgoCD
+      appName: "${ARGO_APP_NAME}"
+      variableMapping:
+        pythonScript.syncStatus: "${ARGO_APP_SYNC_STATUS}"
+  variables:
+  - type: xlrelease.StringVariable
+    key: GIT_REPO_URL
+  - type: xlrelease.StringVariable
+    key: MANIFEST_PATH_IN_GIT
+  - type: xlrelease.StringVariable
+    key: ARGO_PROJECT_NAME
+  - type: xlrelease.StringVariable
+    key: ARGO_APP_NAME
+  - type: xlrelease.StringVariable
+    key: KUBE_NAMESPACE
+  - type: xlrelease.StringVariable
+    key: KUBE_SERVER_URL
+  - type: xlrelease.StringVariable
+    key: ARGO_APP_SYNC_STATUS
+    requiresValue: false
+    showOnReleaseStart: false
+  riskProfile: Default risk profile
+- template: Sample Release Template with Digital.ai Release and ArgoCD
+  description: Major and minor release template.
+  scheduledStartDate: 2022-03-29T09:00:00Z
+  phases:
+  - phase: QA
+    tasks:
+    - name: Wait for dependencies
+      type: xlrelease.GateTask
+    - name: Version passes automated tests
+      type: xlrelease.GateTask
+      description: Select the proper version to test
+      conditions:
+      - name: Automated regression tests are green
+        type: xlrelease.GateCondition
+      - name: Release notes available
+        type: xlrelease.GateCondition
+    - name: Prepare QA environment
+      type: xlrelease.Task
+    - name: Deploy Application to QA - ArgoCD
+      type: xlrelease.Task
+    - name: Testing
+      type: xlrelease.ParallelGroup
+      tasks:
+      - name: Update test scenarios
+        type: xlrelease.Task
+      - name: Regression tests
+        type: xlrelease.Task
+    - name: Sign off by QA
+      type: xlrelease.GateTask
+      conditions:
+      - name: Notify developers
+        type: xlrelease.GateCondition
+      - name: Notify Ops
+        type: xlrelease.GateCondition
+    - name: Notify stakeholders of successful QA
+      type: xlrelease.NotificationTask
+      addresses:
+      - vagrant@localhost
+      subject: "Application ${packageId} passed QA!"
+      body: "The application is available on the ${QA environment} environment."
+    color: '#498500'
+  - phase: UAT
+    tasks:
+    - name: Acceptance environment available
+      type: xlrelease.GateTask
+      conditions:
+      - name: Verify environment availability
+        type: xlrelease.GateCondition
+    - name: Prepare the ACC environment
+      type: xlrelease.Task
+    - name: Install test data on the ACC environment
+      type: xlrelease.Task
+    - name: Check Compliance - Blackduck
+      type: blackduck.checkCompliance
+    - name: Deploy Application UAT - ArgoCD
+      type: xlrelease.Task
+    - name: "Notify QA of installation on ${ACC environment}"
+      type: xlrelease.NotificationTask
+      addresses:
+      - vagrant@localhost
+      subject: "Application ${packageId} is ready for acceptance testing on ${ACC\
+        \ environment}"
+      body: Have at it!
+    - name: Testing
+      type: xlrelease.ParallelGroup
+      tasks:
+      - name: Execute performance test
+        type: xlrelease.Task
+      - name: Execute UA test
+        type: xlrelease.Task
+    - name: Approve
+      type: xlrelease.GateTask
+      conditions:
+      - name: Collect all signatures
+        type: xlrelease.GateCondition
+    color: '#FF9E49'
+  - phase: Production
+    tasks:
+    - name: Go/no go meeting
+      type: xlrelease.Task
+    - name: Decide on upgrade slot
+      type: xlrelease.Task
+      description: Block all agendas
+    - name: Everybody available
+      type: xlrelease.GateTask
+      conditions:
+      - name: Invitations sent
+        type: xlrelease.GateCondition
+      - name: All participants accepted
+        type: xlrelease.GateCondition
+      - name: Set start time on Digital.ai Deploy task
+        type: xlrelease.GateCondition
+    - name: Run backups
+      type: xlrelease.Task
+    - name: Deploy Application PROD - ArgoCD
+      type: xlrelease.Task
+    - name: Execute smoke tests
+      type: xlrelease.Task
+    - name: Notification
+      type: xlrelease.ParallelGroup
+      tasks:
+      - name: Alert marketing
+        type: xlrelease.Task
+      - name: "Application ${packageId} is live!"
+        type: xlrelease.NotificationTask
+        addresses:
+        - vagrant@localhost
+        subject: "Application ${packageId} is live!"
+    color: '#D61F21'
+  variables:
+  - type: xlrelease.StringVariable
+    key: ACC environment
+  - type: xlrelease.StringVariable
+    key: QA environment
+  - type: xlrelease.StringVariable
+    key: packageId
+  riskProfile: Default risk profile
+- name: argocdtrigger
+  type: events.EventBasedTrigger
+  mappedProperties:
+  - type: xlrelease.StringValue
+    targetProperty: releaseTitle
+    value: phase-1
+  - type: xlrelease.StringValue
+    targetProperty: "variables[NEW_TAG]"
+    value: "111"
+  - type: xlrelease.StringValue
+    targetProperty: "variables[GIT_CD_REPO_URL]"
+    value: "111"
+  - type: xlrelease.StringValue
+    targetProperty: "variables[GIT_CD_REPO_NAME]"
+    value: "111"
+  - type: xlrelease.StringValue
+    targetProperty: "variables[LOCAL_GIT_CLONE_PATH]"
+    value: "111"
+  - type: xlrelease.StringValue
+    targetProperty: "variables[MANIFEST_FILE]"
+    value: "1111"
+  - type: xlrelease.StringValue
+    targetProperty: "variables[MANIFEST_PATH_IN_GIT]"
+    value: "1111"
+  - type: xlrelease.StringValue
+    targetProperty: "variables[ARGO_APP_NAME]"
+    value: "1111"
+  - type: xlrelease.StringValue
+    targetProperty: template
+    value: Continuous Delivery
+  - type: xlrelease.StringValue
+    targetProperty: releaseFolder
+    value: ./
+  triggerActionType: xlrelease.CreateReleaseFromTemplateAction
+  eventSource: Argotrigger
+  eventType: events.HttpRequestEvent
