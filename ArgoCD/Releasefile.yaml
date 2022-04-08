@@ -1,6 +1,6 @@
 # Exported from:        http://localhost:5516/
 # Release version:      22.0.2
-# Date created:         Thu Apr 07 09:59:19 UTC 2022
+# Date created:         Fri Apr 08 15:54:34 UTC 2022
 
 ---
 apiVersion: xl-release/v1
@@ -315,6 +315,8 @@ spec:
       conditions:
       - name: Collect all signatures
         type: xlrelease.GateCondition
+    - name: second approval
+      type: xlrelease.Task
     color: '#FF9E49'
   - phase: Production
     tasks:
